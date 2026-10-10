@@ -170,6 +170,16 @@ def calcular_activos(db):
                 continue
             if not any(x["id"] == aid for x in out):
                 out.append(item)
+    # un mismo número activado varias veces: queda una sola alarma, la que dura más
+    unidos = {}
+    for x in out:
+        k = (x["n"], tuple(x["lots"]), x["estado"])
+        if x["estado"] == "activa" and k in unidos:
+            if x["hasta"] > unidos[k]["hasta"]:
+                unidos[k] = x
+        else:
+            unidos.setdefault(k if x["estado"] == "activa" else (x["id"],), x)
+    out = list(unidos.values())
     out.sort(key=lambda x: (x["estado"] != "activa", x["hasta"]))
     with open(ACTIVOS, "w", encoding="utf-8") as fh:
         json.dump({"actualizado": ahora().isoformat(timespec="seconds"), "activos": out}, fh, ensure_ascii=False, separators=(",", ":"))
