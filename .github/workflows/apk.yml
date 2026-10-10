@@ -1,0 +1,63 @@
+name: Armar APK
+on:
+  push:
+    paths: ['android/**', '.github/workflows/apk.yml', 'index.html', 'manifest.json']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.9' }
+      - name: Copiar la app dentro de la APK
+        run: |
+          mkdir -p android/app/src/main/assets/www
+          cp index.html manifest.json icon-192.png icon-512.png android/app/src/main/assets/www/
+      - name: Armar
+        working-directory: android
+        env:
+          KS_B64: ${{ secrets.KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASS }}
+        run: |
+          # Firma: usa la llave privada si está en los secretos; si no, la llave de prueba del repositorio.
+          if [ -n "$KS_B64" ]; then echo "$KS_B64" | base64 -d > $RUNNER_TEMP/f26.jks; export KS_PATH=$RUNNER_TEMP/f26.jks
+          else export KS_PATH=$PWD/firma/prueba.jks KS_PASS=f26prueba; fi
+          OWNER=${GITHUB_REPOSITORY_OWNER,,}
+          REPO=${GITHUB_REPOSITORY#*/}
+          gradle assembleRelease -PAPP_URL="https://${OWNER}.github.io/${REPO}/" -PVERSION_CODE=${{ github.run_number }}
+          cp app/build/outputs/apk/release/app-release.apk $RUNNER_TEMP/Loterias-F26.apk
+      - name: Armar versión personal (con las rutas del secreto)
+        working-directory: android
+        env:
+          KS_B64: ${{ secrets.KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASS }}
+          ALARMAS: ${{ secrets.ALARMAS }}
+        run: |
+          if [ -n "$KS_B64" ]; then export KS_PATH=$RUNNER_TEMP/f26.jks; else export KS_PATH=$PWD/firma/prueba.jks KS_PASS=f26prueba; fi
+          W=app/src/main/assets/www
+          python3 - "$W/index.html" <<'PY'
+          import os, sys, json
+          p = sys.argv[1]; s = open(p, encoding="utf-8").read()
+          rutas = json.loads(os.environ.get("ALARMAS") or "[]")
+          s = s.replace("<script>", "<script>window.F26_RUTAS=" + json.dumps(rutas) + ";", 1)
+          open(p, "w", encoding="utf-8").write(s)
+          PY
+          gradle assembleRelease -PAPP_ID=com.f26.personal -PAPP_NAME="F-26 Personal" -PVERSION_CODE=${{ github.run_number }}
+          cp app/build/outputs/apk/release/app-release.apk $RUNNER_TEMP/F26-Personal.apk
+      - name: Guardar versión personal (solo se descarga con su cuenta de GitHub)
+        uses: actions/upload-artifact@v4
+        with:
+          name: F26-Personal
+          path: ${{ runner.temp }}/F26-Personal.apk
+          retention-days: 90
+      - name: Publicar descarga
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          gh release delete apk -y --cleanup-tag || true
+          gh release create apk "$RUNNER_TEMP/Loterias-F26.apk" --title "Loterías F-26 (APK)" \
+            --notes "Versión ${{ github.run_number }}. Descarga Loterias-F26.apk e instálala en Android."

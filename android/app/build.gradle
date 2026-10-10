@@ -1,0 +1,39 @@
+plugins { id 'com.android.application' }
+
+def appUrl = project.findProperty('APP_URL') ?: 'https://example.github.io/f26/'
+def appId = project.findProperty('APP_ID') ?: 'com.f26.resultados'
+def appName = project.findProperty('APP_NAME') ?: 'Loterías F-26'
+def vCode = (project.findProperty('VERSION_CODE') ?: '1').toInteger()
+
+android {
+    namespace 'com.f26.resultados'
+    compileSdk 34
+    defaultConfig {
+        applicationId appId
+        minSdk 21
+        targetSdk 34
+        versionCode vCode
+        versionName "1.0.${vCode}"
+        buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
+        resValue 'string', 'app_name', appName
+    }
+    buildFeatures { buildConfig true }
+    signingConfigs {
+        release {
+            storeFile file(System.getenv('KS_PATH') ?: 'none.jks')
+            storePassword System.getenv('KS_PASS')
+            keyAlias 'f26'
+            keyPassword System.getenv('KS_PASS')
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

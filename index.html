@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e7a52">
+<title>Resultados de Loterías F-26</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: app de una columna estilo tablero de banca — cabecera con selector de lotería, pestañas, tarjetas de bolos */
+:root{
+  --bg:#eef2f0; --surface:#ffffff; --ink:#10221c; --muted:#5b6d66; --line:#d5dfdb;
+  --accent:#0e7a52; --accent-ink:#ffffff; --ball:#fff7e0; --ball-ink:#10221c;
+  --hot:#c2410c; --cold:#1d5fa8; --late:#7c3aed;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1714; --surface:#14231e; --ink:#e6efeb; --muted:#93a8a0; --line:#25382f;
+  --accent:#2bb57f; --accent-ink:#06130e; --ball:#f3e6bf; --ball-ink:#10221c;
+  --hot:#fb8b4f; --cold:#6aa8ef; --late:#b18cff; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1714; --surface:#14231e; --ink:#e6efeb; --muted:#93a8a0; --line:#25382f;
+  --accent:#2bb57f; --accent-ink:#06130e; --ball:#f3e6bf; --ball-ink:#10221c;
+  --hot:#fb8b4f; --cold:#6aa8ef; --late:#b18cff; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:16px 48px;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-direction:column;gap:12px}
+h1{font-family:var(--display);font-weight:800;font-size:2.1rem;line-height:1;letter-spacing:.01em;margin:0;text-transform:uppercase}
+h1 span{color:var(--accent)}
+.sub{color:var(--muted);margin:0;font-size:.9rem}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.top>div{min-width:0}
+.refresh{flex:none;display:inline-flex;align-items:center;gap:6px;border:0;background:var(--accent);color:var(--accent-ink);font:700 .88rem var(--body);padding:10px 14px;border-radius:999px;cursor:pointer}
+.refresh:disabled{opacity:.7;cursor:default}
+.refresh.spin svg{animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.sync{margin:-4px 0 0;font-size:.78rem;color:var(--muted);min-height:1.1em}
+.daybar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px}
+.daybar .nav{flex:none;width:40px;height:40px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:800 1.2rem var(--display);cursor:pointer}
+.daybar .nav:disabled{opacity:.35;cursor:default}
+.daybar .mid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px}
+.daybar .dname{font:800 1.1rem var(--display);text-transform:uppercase;letter-spacing:.02em;text-align:center}
+.daybar input[type=date]{width:auto;max-width:100%;padding:4px 8px;font:600 .82rem var(--body);border-radius:8px}
+.daybar .back{font:700 .72rem var(--body);color:var(--accent);background:none;border:0;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;padding:2px}
+.hoy-list{display:flex;flex-direction:column;gap:10px}
+.lc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.lc:hover{border-color:var(--accent)}
+.lc-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lc-name{font:800 1.15rem var(--display);text-transform:uppercase;letter-spacing:.02em;min-width:0}
+.lc-sub{font-size:.78rem;color:var(--muted)}
+.pill{flex:none;font:700 .68rem var(--body);text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--bg);display:inline-flex;align-items:center;gap:5px}
+.pill.ok{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pill.wait{color:var(--hot);border-color:var(--hot)}
+.pill.wait::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--hot);animation:blink 1.2s ease-in-out infinite}
+@keyframes blink{50%{opacity:.25}}
+.lc .balls{gap:8px}
+.lc .ball{width:44px;height:44px;font-size:1.35rem}
+.lc.old .ball{opacity:.55}
+.lc-old{font-size:.78rem;color:var(--muted)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chip{flex:none;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:600 .9rem var(--body);padding:8px 14px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;gap:2px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.tab{min-width:0;border:0;background:none;color:var(--muted);font:700 clamp(.66rem,2.9vw,.82rem) var(--body);padding:10px 2px;border-radius:9px;cursor:pointer;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab[aria-selected="true"]{background:var(--bg);color:var(--ink)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.label{font:700 .72rem var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0}
+.draw{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.draw-meta{min-width:0}
+.draw-date{font-weight:600}
+.draw-small{color:var(--muted);font-size:.82rem}
+.balls{display:flex;gap:8px;flex:none}
+.ball{width:46px;height:46px;border-radius:50%;background:var(--ball);color:var(--ball-ink);display:grid;place-items:center;font:800 1.45rem var(--display);font-variant-numeric:tabular-nums;box-shadow:inset 0 -3px 0 rgba(0,0,0,.12)}
+.ball.first{background:var(--accent);color:var(--accent-ink)}
+.hero .ball{width:64px;height:64px;font-size:2rem}
+.hero .balls{gap:12px}
+.pos{display:flex;gap:12px}
+.pos span{width:64px;text-align:center;font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.tag{display:inline-block;font:700 .68rem var(--body);text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:999px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.list{display:flex;flex-direction:column}
+.list .draw{padding-block:10px;border-top:1px solid var(--line)}
+.list .draw:first-child{border-top:0;padding-top:0}
+.list .ball{width:38px;height:38px;font-size:1.2rem}
+.grid10{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.cell{aspect-ratio:1;max-width:100%;border-radius:6px;display:grid;place-items:center;font:700 .82rem var(--display);font-variant-numeric:tabular-nums;color:var(--ink);cursor:pointer;border:0}
+.legend{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted)}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{display:flex;flex-direction:column;gap:6px}
+.stat h3{margin:0;font:800 1.1rem var(--display);text-transform:uppercase;letter-spacing:.03em}
+.stat.hot h3{color:var(--hot)} .stat.cold h3{color:var(--cold)} .stat.late h3{color:var(--late)}
+.row{display:flex;justify-content:space-between;align-items:baseline;font-variant-numeric:tabular-nums;font-size:.85rem;border-bottom:1px dashed var(--line);padding-block:3px}
+.row b{font:800 1.15rem var(--display)}
+.row small{color:var(--muted)}
+form{display:flex;flex-direction:column;gap:12px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fields3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+label{display:flex;flex-direction:column;gap:4px;font-size:.8rem;font-weight:600;color:var(--muted)}
+input,select{font:600 1rem var(--body);padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+input.num{font:800 1.5rem var(--display);text-align:center;letter-spacing:.05em}
+.btn{font:700 .95rem var(--body);padding:12px 16px;border-radius:11px;border:0;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.btn.danger{background:transparent;border:1.5px solid var(--line);color:var(--hot)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.msg{font-size:.85rem;min-height:1.2em;margin:0}
+.msg.ok{color:var(--accent)} .msg.err{color:var(--hot)}
+.note{font-size:.8rem;color:var(--muted);margin:0}
+textarea{font:500 .85rem ui-monospace,Menlo,monospace;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-height:110px;resize:vertical}
+.pick-out{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding-block:8px}
+.detail{font-size:.88rem}
+@media (max-width:420px){.trio{grid-template-columns:1fr}.ball{width:42px;height:42px}.list .ball{width:34px;height:34px;font-size:1.05rem}.hero .ball{width:56px;height:56px;font-size:1.75rem}.pos span{width:56px}}
+@media (prefers-reduced-motion:no-preference){.hero .ball{animation:pop .5s cubic-bezier(.3,1.6,.6,1) both}.hero .ball:nth-child(2){animation-delay:.08s}.hero .ball:nth-child(3){animation-delay:.16s}@keyframes pop{from{transform:scale(.6)}to{transform:scale(1)}}}
+.alarm{border-left:4px solid var(--hot)}
+.alarm.ok{border-left-color:var(--accent)}
+.al-item{display:flex;gap:10px;align-items:flex-start;padding-block:6px;border-bottom:1px dashed var(--line);font-size:.9rem}
+.al-item:last-child{border-bottom:0}
+.al-ic{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:800 .95rem var(--display);background:var(--hot);color:#fff}
+.al-item.ok .al-ic{background:var(--accent);color:var(--accent-ink)}
+.al-item.fail .al-ic{background:var(--line);color:var(--muted)}
+.al-txt{flex:1;min-width:0}
+.al-txt b{font:800 1.05rem var(--display)}
+.al-txt small{display:block;color:var(--muted)}
+.rt{display:flex;gap:8px;align-items:center;justify-content:space-between;padding-block:8px;border-bottom:1px dashed var(--line)}
+.rt .x{border:1px solid var(--line);background:var(--bg);color:var(--muted);border-radius:8px;padding:4px 10px;font:700 .8rem var(--body);cursor:pointer}
+.fields5{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+</style>
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="top">
+      <div>
+        <h1>Resultados de Loterías <span>F-26</span></h1>
+      </div>
+      <button class="refresh" id="b-ref" type="button" aria-label="Actualizar resultados"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg><span>Actualizar</span></button>
+    </div>
+    <p class="sub">Resultados que se actualizan solos después de cada sorteo, con historial y estadística.</p>
+    <p class="sync" id="sync" aria-live="polite"></p>
+    <div class="chips" id="chips" role="group" aria-label="Lotería"></div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="hoy" aria-selected="true">Hoy</button>
+    <button class="tab" role="tab" data-tab="res" aria-selected="false">Historial</button>
+    <button class="tab" role="tab" data-tab="est" aria-selected="false">Análisis</button>
+    <button class="tab" role="tab" data-tab="gen" aria-selected="false">Jugadas</button>
+    <button class="tab" role="tab" data-tab="add" aria-selected="false">Anotar</button>
+    <button class="tab" role="tab" data-tab="ala" aria-selected="false">Alarmas</button>
+  </nav>
+
+  <section class="panel" id="p-hoy"></section>
+  <section class="panel" id="p-res" hidden></section>
+  <section class="panel" id="p-est" hidden></section>
+  <section class="panel" id="p-gen" hidden></section>
+  <section class="panel" id="p-ala" hidden></section>
+  <section class="panel" id="p-add" hidden>
+    <div class="card">
+      <p class="label">Anotar resultado</p>
+      <form id="f-add" novalidate>
+        <div class="fields">
+          <label for="a-lot">Lotería<select id="a-lot"></select></label>
+          <label for="a-date">Fecha<input type="date" id="a-date"></label>
+        </div>
+        <div class="fields3">
+          <label for="a-1">1ra<input class="num" id="a-1" inputmode="numeric" maxlength="2" placeholder="00"></label>
+          <label for="a-2">2da<input class="num" id="a-2" inputmode="numeric" maxlength="2" placeholder="00"></label>
+          <label for="a-3">3ra<input class="num" id="a-3" inputmode="numeric" maxlength="2" placeholder="00"></label>
+        </div>
+        <button class="btn" type="submit">Guardar resultado</button>
+        <p class="msg" id="a-msg" aria-live="polite"></p>
+      </form>
+    </div>
+    <div class="card">
+      <p class="label">Importar historial</p>
+      <p class="note">Pega una línea por sorteo: <b>fecha, 1ra, 2da, 3ra</b> (ej. <code>2026-09-30, 14, 72, 05</code>). Se guarda en la lotería seleccionada arriba.</p>
+      <label for="imp">Datos<textarea id="imp" placeholder="2026-09-30, 14, 72, 05&#10;2026-09-29, 88, 31, 40"></textarea></label>
+      <div class="actions">
+        <button class="btn" id="b-imp" type="button">Importar</button>
+        <button class="btn ghost" id="b-exp" type="button">Copiar historial</button>
+      </div>
+      <p class="msg" id="i-msg" aria-live="polite"></p>
+    </div>
+    <div class="card">
+      <p class="label">Datos de ejemplo</p>
+      <p class="note">La app abre con 60 días de sorteos de ejemplo para que veas cómo funciona. Bórralos cuando cargues tus resultados reales.</p>
+      <div class="actions">
+        <button class="btn danger" id="b-clr" type="button">Borrar ejemplos</button>
+        <button class="btn ghost" id="b-seed" type="button">Volver a cargar ejemplos</button>
+      </div>
+      <p class="msg" id="c-msg" aria-live="polite"></p>
+    </div>
+  </section>
+</div>
+
+<script>
+const LOTS=[
+  {id:"lr",name:"La Primera Día",h:"12:00 p. m."},
+  {id:"real",name:"Lotería Real",h:"12:55 p. m."},
+  {id:"gm",name:"Gana Más",h:"2:30 p. m."},
+  {id:"ny-t",name:"New York Tarde",h:"2:30 p. m."},
+  {id:"lrn",name:"La Primera Noche",h:"7:00 p. m."},
+  {id:"lp",name:"Loteka",h:"7:50 p. m."},
+  {id:"ld",name:"Leidsa Quiniela Palé",h:"8:55 p. m."},
+  {id:"nn",name:"Nacional Noche",h:"9:00 p. m."},
+  {id:"ny-n",name:"New York Noche",h:"10:30 p. m."}
+];
+function nyDST(){const d=new Date(),y=d.getFullYear();
+  const mar=new Date(y,2,1),nov=new Date(y,10,1);
+  const start=new Date(y,2,1+((7-mar.getDay())%7)+7),end=new Date(y,10,1+((7-nov.getDay())%7));
+  return d>=start&&d<end}
+const rdDow=()=>new Date(Date.now()-4*3600e3).getUTCDay();
+const lotHour=id=>{if(id==="ld"&&rdDow()===0)return "3:55 p. m.";if(!nyDST()){if(id==="ny-t")return "3:30 p. m.";if(id==="ny-n")return "11:30 p. m."}return LOTS.find(l=>l.id===id).h};
+const KEY="tablero-loterias-v1";
+const p2=n=>String(n).padStart(2,"0");
+const MESES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const DIAS=["dom","lun","mar","mié","jue","vie","sáb"];
+function fmtDate(s){const d=new Date(s+"T12:00:00");return `${DIAS[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`}
+function today(){const d=new Date();return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`}
+
+function seeded(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+function sample(){
+  const out=[];const base=new Date();base.setHours(12);
+  LOTS.forEach((l,li)=>{const r=seeded(1234+li*97);
+    for(let i=1;i<=60;i++){const d=new Date(base);d.setDate(d.getDate()-i);
+      const ds=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+      out.push({lot:l.id,date:ds,n:[0,0,0].map(()=>Math.floor(r()*100)),ex:true});}});
+  return out;
+}
+let state={lot:"gm",tab:"hoy",draws:[]};
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.draws)){state.draws=s.draws.filter(d=>LOTS.some(l=>l.id===d.lot));LOTS.forEach(l=>{if(!state.draws.some(d=>d.lot===l.id))state.draws.push(...sample().filter(d=>d.lot===l.id))});state.lot=LOTS.some(l=>l.id===s.lot)?s.lot:state.lot;return}}catch(e){}state.draws=sample()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({draws:state.draws,lot:state.lot}))}catch(e){}}
+
+let web=new Map(),dbRef=null,lastSync=null;
+function allDraws(){
+  const m=new Map();state.draws.forEach(d=>m.set(d.lot+"_"+d.date,d));
+  web.forEach((d,k)=>m.set(k,d));
+  const real=new Set([...m.values()].filter(d=>!d.ex).map(d=>d.lot));
+  return [...m.values()].filter(d=>!(d.ex&&real.has(d.lot)));
+}
+function drawsFor(lot){return allDraws().filter(d=>d.lot===lot).sort((a,b)=>b.date.localeCompare(a.date))}
+function upsert(d){const i=state.draws.findIndex(x=>x.lot===d.lot&&x.date===d.date);if(i>=0)state.draws[i]=d;else state.draws.push(d);
+  if(dbRef){dbRef.doc(d.lot+"_"+d.date).set({lot:d.lot,date:d.date,n:d.n,src:"manual"}).catch(()=>{})}}
+function applySnap(s){web=new Map();s.docs.forEach(doc=>{const v=doc.data();
+  if(v&&LOTS.some(l=>l.id===v.lot)&&Array.isArray(v.n)&&v.n.length===3)web.set(v.lot+"_"+v.date,{lot:v.lot,date:v.date,n:v.n.map(Number),src:v.src||"web"})});
+  lastSync=new Date();showSync();render()}
+function hora12(d){let h=d.getHours(),m=p2(d.getMinutes());const ap=h>=12?"p. m.":"a. m.";h=h%12||12;return `${h}:${m} ${ap}`}
+function showSync(txt){const e=document.getElementById("sync");if(e)e.textContent=txt||(lastSync?`Actualizado a las ${hora12(lastSync)}`:"")}
+// Resultados publicados por el robot de GitHub: historial completo (una vez) + últimos días (cada minuto).
+const DATOS=location.hostname.endsWith("github.io")?"data/":"https://raw.githubusercontent.com/maldonadox58-commits/Loterias-f26/main/data/";
+const HIST_URL=DATOS+"historial.json", HOY_URL=DATOS+"hoy.json";
+let poll=null, histMap=null;
+function toMap(j,m){(j.draws||[]).forEach(v=>{
+  if(v&&LOTS.some(l=>l.id===v.lot)&&Array.isArray(v.n)&&v.n.length===3)m.set(v.lot+"_"+v.date,{lot:v.lot,date:v.date,n:v.n.map(Number),src:"web"})});return m}
+async function bajarJson(u,fresco){
+  const r=await fetch(fresco?u+"?t="+Date.now():u,{cache:fresco?"no-store":"default"});
+  if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}
+async function traer(){
+  if(!histMap){try{histMap=toMap(await bajarJson(HIST_URL,false),new Map())}catch(e){histMap=null}}
+  const hoy=await bajarJson(HOY_URL,true);
+  if(MODO==="publico"){try{activos=(await bajarJson(DATOS+"activos.json",true)).activos||[]}catch(e){}}
+  web=toMap(hoy,new Map(histMap||[]));
+  lastSync=new Date();showSync();render();
+}
+function arrancarPoll(){if(!poll)poll=setInterval(()=>{if(!document.hidden)traer().catch(()=>{})},60000)}
+async function connectDb(){
+  dbRef=null;
+  try{await traer()}catch(e){showSync("Sin conexión. Revisa el internet; se intentará de nuevo cada minuto.")}
+  arrancarPoll();
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)traer().catch(()=>{})});
+async function refresh(){
+  const b=document.getElementById("b-ref");b.disabled=true;b.classList.add("spin");showSync("Buscando resultados…");
+  try{await traer()}catch(e){showSync("No se pudo actualizar. Revisa el internet e inténtalo de nuevo.")}
+  finally{b.disabled=false;b.classList.remove("spin");arrancarPoll()}
+}
+
+function stats(list){
+  const freq=Array(100).fill(0),last=Array(100).fill(-1);
+  list.forEach((d,i)=>d.n.forEach(n=>{freq[n]++;if(last[n]<0)last[n]=i}));
+  const nums=[...Array(100).keys()];
+  const hot=[...nums].sort((a,b)=>freq[b]-freq[a]||a-b).slice(0,6);
+  const cold=[...nums].sort((a,b)=>freq[a]-freq[b]||a-b).slice(0,6);
+  const gap=n=>last[n]<0?list.length:last[n];
+  const late=[...nums].sort((a,b)=>gap(b)-gap(a)||a-b).slice(0,6);
+  const tens=Array(10).fill(0),ends=Array(10).fill(0);
+  list.forEach(d=>d.n.forEach(n=>{tens[Math.floor(n/10)]++;ends[n%10]++}));
+  return{freq,last,hot,cold,late,gap,tens,ends,total:list.length};
+}
+const ball=(n,cls="")=>`<div class="ball ${cls}">${p2(n)}</div>`;
+const lotName=id=>LOTS.find(l=>l.id===id).name;
+
+function rdNow(){const d=new Date(Date.now()-4*3600e3);
+  return{date:`${d.getUTCFullYear()}-${p2(d.getUTCMonth()+1)}-${p2(d.getUTCDate())}`,min:d.getUTCHours()*60+d.getUTCMinutes()}}
+function hourMin(id){const m=lotHour(id).match(/(\d+):(\d+)\s*([ap])/);let h=+m[1]%12;if(m[3]==="p")h+=12;return h*60+ +m[2]}
+function shiftDay(ds,n){const d=new Date(ds+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+function renderHoy(){
+  const el=document.getElementById("p-hoy");const now=rdNow();
+  const day=state.day&&state.day<now.date?state.day:now.date;const isNow=day===now.date;
+  const label=isNow?"Hoy":day===shiftDay(now.date,-1)?"Ayer":fmtDate(day);
+  const bar=`<div class="daybar">
+    <button class="nav" type="button" data-day="${shiftDay(day,-1)}" aria-label="Día anterior">‹</button>
+    <div class="mid"><div class="dname">${label}</div>
+      <label for="day-pick" class="sr" style="position:absolute;left:-9999px">Elegir fecha</label>
+      <input type="date" id="day-pick" value="${day}" max="${now.date}">
+      ${isNow?"":`<button class="back" type="button" data-day="${now.date}">Volver a hoy</button>`}</div>
+    <button class="nav" type="button" data-day="${shiftDay(day,1)}" aria-label="Día siguiente" ${isNow?"disabled":""}>›</button>
+  </div>`;
+  if(!isNow){
+    el.innerHTML=bar+`<div class="hoy-list">${LOTS.map(l=>{const d=drawsFor(l.id).find(x=>x.date===day);
+      return `<button class="lc${d?"":" old"}" type="button" data-go="${l.id}"><div class="lc-top"><div class="lc-name">${l.name}<div class="lc-sub">${lotHour(l.id)}</div></div>${d?(d.ex?'<span class="pill">Ejemplo</span>':''):'<span class="pill">Sin datos</span>'}</div>${d?`<div class="balls">${ball(d.n[0],"first")}${ball(d.n[1])}${ball(d.n[2])}</div>`:`<div class="lc-old">No tenemos el resultado de este día</div>`}</button>`}).join("")}</div>`;
+    return}
+  el.innerHTML=bar+bannerAlarmas()+`<div class="hoy-list">${LOTS.map(l=>{
+    const last=drawsFor(l.id)[0];const isToday=last&&last.date===now.date;const passed=now.min>=hourMin(l.id);
+    let pill,body;
+    if(isToday){pill=`<span class="pill ok">Hoy</span>`;
+      body=`<div class="balls">${ball(last.n[0],"first")}${ball(last.n[1])}${ball(last.n[2])}</div>`}
+    else{pill=passed?`<span class="pill wait">Esperando</span>`:`<span class="pill">Sale ${lotHour(l.id)}</span>`;
+      body=last?`<div class="lc-old">Anterior · ${fmtDate(last.date)}${last.ex?" · ejemplo":""}</div><div class="balls">${ball(last.n[0],"first")}${ball(last.n[1])}${ball(last.n[2])}</div>`:`<div class="lc-old">Sin resultados todavía</div>`}
+    return `<button class="lc${isToday?"":" old"}" type="button" data-go="${l.id}"><div class="lc-top"><div class="lc-name">${l.name}<div class="lc-sub">${lotHour(l.id)}</div></div>${pill}</div>${body}</button>`}).join("")}</div>
+  <p class="note">Toca una lotería para ver su historial. Esta pantalla se refresca sola.</p>`;
+}
+function renderChips(){
+  document.getElementById("chips").hidden=state.tab==="hoy"||state.tab==="ala";
+  document.getElementById("chips").innerHTML=LOTS.map(l=>`<button class="chip" data-lot="${l.id}" aria-pressed="${l.id===state.lot}">${l.name}</button>`).join("");
+}
+function renderRes(){
+  const list=drawsFor(state.lot);const el=document.getElementById("p-res");
+  if(!list.length){el.innerHTML=`<div class="card"><p class="label">${lotName(state.lot)}</p><p>No hay resultados todavía. Anota el primero en la pestaña <b>Anotar</b>.</p></div>`;return}
+  const [t,...rest]=list;
+  el.innerHTML=`<div class="card hero">
+    <div class="draw"><div class="draw-meta"><p class="label">Último sorteo · ${lotName(state.lot)} · sale a las ${lotHour(state.lot)}</p><div class="draw-date">${fmtDate(t.date)}</div>${t.ex?'<span class="tag">Ejemplo</span>':t.src==="web"?'<span class="tag">Actualizado de internet</span>':''}</div></div>
+    <div class="balls">${ball(t.n[0],"first")}${ball(t.n[1])}${ball(t.n[2])}</div>
+    <div class="pos"><span>1ra</span><span>2da</span><span>3ra</span></div>
+  </div>
+  <div class="card"><p class="label">Historial (${list.length} sorteos)</p><div class="list">
+  ${rest.slice(0,state.histN||30).map(d=>`<div class="draw"><div class="draw-meta"><div class="draw-date">${fmtDate(d.date)}</div>${d.ex?'<span class="draw-small">ejemplo</span>':''}</div><div class="balls">${ball(d.n[0],"first")}${ball(d.n[1])}${ball(d.n[2])}</div></div>`).join("")}
+  </div>${rest.length>(state.histN||30)?`<button class="btn ghost" type="button" id="b-more">Ver más (${rest.length-(state.histN||30)} restantes)</button>`:''}</div>`;
+}
+function heat(v,max){const a=max?v/max:0;return `color-mix(in oklab, var(--hot) ${Math.round(a*85)}%, var(--bg))`}
+let sel=null;
+function nextDay(ds){const d=new Date(ds+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+1);return d.toISOString().slice(0,10)}
+const rv=x=>(x%10)*10+Math.floor(x/10);
+function shiftD(ds,n){const d=new Date(ds+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+function repRate(A,B,sh,mode){let n=0,h=0;const ev=[];A.forEach((v,d)=>{const d2=shiftD(d,sh);const w=B.get(d2);if(!w)return;n++;let ok=false;
+  [...new Set(v)].forEach(x=>{const same=w.includes(x),rev=rv(x)!==x&&w.includes(rv(x));
+    if(same||(mode&&rev)){ok=true;ev.push({d,d2,x,y:same?x:rv(x),rev:!same})}});if(ok)h++});return{n,h,p:n?100*h/n:0,ev}}
+function renderRep(){
+  const G=new Map(drawsFor("gm").filter(d=>!d.ex).map(d=>[d.date,d.n])),N=new Map(drawsFor("nn").filter(d=>!d.ex).map(d=>[d.date,d.n]));
+  if(G.size<30||N.size<30)return "";
+  const tipos=[["Gana Más → Nacional, mismo día",G,N,0],["Gana Más → Nacional, día siguiente",G,N,1],["Nacional → Gana Más, día siguiente",N,G,1],["Gana Más → Gana Más, día siguiente",G,G,1],["Nacional → Nacional, día siguiente",N,N,1]];
+  const lags=[37,53,71,97,131];
+  const az=m=>{let s=0;lags.forEach(L=>{s+=repRate(G,N,L,m).p});return s/lags.length};
+  const az0=az(false),az1=az(true);
+  let ev=[];
+  const rows=tipos.map(([t,A,B,sh])=>{const r0=repRate(A,B,sh,false),r1=repRate(A,B,sh,true);ev=ev.concat(r1.ev.map(e=>({...e,t})));return{t,r0,r1}});
+  ev.sort((a,b)=>b.d2.localeCompare(a.d2));
+  const bar=(p,ref)=>`<span style="display:inline-block;height:8px;border-radius:4px;background:${p>ref+1?"var(--hot)":"var(--accent)"};width:${Math.min(100,p*4)}%;vertical-align:middle"></span>`;
+  const lastG=drawsFor("gm").find(d=>!d.ex),lastN=drawsFor("nn").find(d=>!d.ex);
+  const mir=n=>[...new Set(n.flatMap(x=>rv(x)!==x?[x,rv(x)]:[x]))];
+  return `<div class="card"><p class="label">Repeticiones Gana Más ↔ Nacional</p>
+    <p class="note">Días en que se repitió al menos 1 número. "Igual o al revés" también cuenta el espejo (82 → 28). Por azar sería ${az0.toFixed(1)} % y ${az1.toFixed(1)} %.</p>
+    ${rows.map(r=>`<div class="row" style="flex-wrap:wrap;gap:4px"><span style="flex:1 1 60%;min-width:0">${r.t}</span><small style="flex-basis:100%">Igual: <b>${r.r0.p.toFixed(1)} %</b> ${bar(r.r0.p,az0)}<br>Igual o al revés: <b>${r.r1.p.toFixed(1)} %</b> ${bar(r.r1.p,az1)} · ${r.r1.h} de ${r.r1.n} días</small></div>`).join("")}
+  </div>
+  ${(()=>{const C="2026-10-02";
+    let n1=0,h1=0;N.forEach((v,d)=>{if(d<C)return;const w=G.get(shiftD(d,1));if(!w)return;n1++;if([...new Set(v)].some(x=>w.includes(x)))h1++});
+    let n3=0,h3=0;N.forEach((v,d)=>{if(d<C)return;const w=G.get(shiftD(d,1));if(!w)return;n3++;if(w.includes(v[0]))h3++});
+    let n2=0,h2=0;G.forEach((v,d)=>{if(d<C||!v.includes(40))return;const w=N.get(shiftD(d,1));if(!w)return;n2++;if(w.includes(40))h2++});
+    return `<div class="card"><p class="label">Seguimiento desde el 2 oct 2026</p>
+    <p class="note">Solo cuenta sorteos nuevos, que no se usaron para encontrar estos patrones. Así se ve si eran reales o casualidad.</p>
+    <div class="row" style="flex-wrap:wrap;gap:4px"><span style="flex:1 1 60%;min-width:0">Nacional → Gana Más, día siguiente</span><b>${n1?(100*h1/n1).toFixed(1)+" %":"—"}</b><small style="flex-basis:100%">${h1} de ${n1} días · antes 9.8 % · azar 8.6 %${n1<100?" · hacen falta unos 100 días para opinar":""}</small></div>
+    <div class="row" style="flex-wrap:wrap;gap:4px"><span style="flex:1 1 60%;min-width:0">1ra de Nacional → sale en Gana Más, día siguiente</span><b>${n3?(100*h3/n3).toFixed(1)+" %":"—"}</b><small style="flex-basis:100%">${h3} de ${n3} días · antes 4.2 % (88 de 2085) · azar 3 % · 2da y 3ra no pasan del azar</small></div>
+    <div class="row" style="flex-wrap:wrap;gap:4px"><span style="flex:1 1 60%;min-width:0">40 en Gana Más → 40 en Nacional, día siguiente</span><b>${h2} de ${n2}</b><small style="flex-basis:100%">antes 9 de 73 (12 %) · azar 3 %${n2<20?" · el 40 sale poco: tomará meses":""}</small></div>
+    </div>`})()}
+  ${renderReal(G,N,bar,az0,az1,mir)}
+  <div class="card"><p class="label">Para vigilar (con espejos)</p>
+    ${lastN?`<p class="detail">Mejor candidato: la <b>1ra de Nacional</b> (${fmtDate(lastN.date)}) → <b style="font:800 1.3rem var(--display)">${p2(lastN.n[0])}</b> para Gana Más de ${fmtDate(shiftD(lastN.date,1))}.</p><p class="detail">Todos los del último Nacional, para Gana Más de ${fmtDate(shiftD(lastN.date,1))}:</p><div class="balls" style="flex-wrap:wrap">${mir(lastN.n).map(x=>ball(x,lastN.n.includes(x)?"first":"")).join("")}</div>`:""}
+    ${lastG?`<p class="detail">Del último Gana Más (${fmtDate(lastG.date)}), para Nacional ese día o el siguiente:</p><div class="balls" style="flex-wrap:wrap">${mir(lastG.n).map(x=>ball(x,lastG.n.includes(x)?"first":"")).join("")}</div>`:""}
+    <p class="note">En verde el número que salió; en crema su espejo.</p>
+  </div>
+  <div class="card"><p class="label">Últimas repeticiones</p><div class="list">
+    ${ev.slice(0,15).map(e=>`<div class="draw"><div class="draw-meta"><div class="draw-date">${fmtDate(e.d2)}</div><span class="draw-small">${e.t}${e.rev?` · al revés (${p2(e.x)} → ${p2(e.y)})`:""}</span></div><div class="balls">${ball(e.y,"first")}</div></div>`).join("")}
+  </div></div>`;
+}
+function renderReal(G,N,bar,az0,az1,mir){
+  const R=new Map(drawsFor("real").filter(d=>!d.ex).map(d=>[d.date,d.n]));
+  if(R.size<30)return "";
+  const tipos=[["Real → Gana Más, mismo día",R,G,0],["Real → Nacional, mismo día",R,N,0],["Gana Más → Real, día siguiente",G,R,1],["Nacional → Real, día siguiente",N,R,1],["Real → Real, día siguiente",R,R,1]];
+  let ev=[];
+  const rows=tipos.map(([t,A,B,sh])=>{const r0=repRate(A,B,sh,false),r1=repRate(A,B,sh,true);ev=ev.concat(r1.ev.map(e=>({...e,t})));return{t,r0,r1}});
+  ev.sort((a,b)=>b.d2.localeCompare(a.d2));
+  const num=40,days=[0,1,2,3];
+  const hit=d=>days.some(k=>{const t=shiftD(d,k);return (G.get(t)||[]).includes(num)||(N.get(t)||[]).includes(num)});
+  const lim=shiftD(rdNow().date,-4);
+  const base=[...R.keys()].filter(d=>d>="2018-04-01"&&d<=lim);
+  const con=base.filter(d=>R.get(d).includes(num));
+  const h=con.filter(hit).length,hb=base.filter(hit).length;
+  const ult=[...R.keys()].sort().reverse().find(d=>R.get(d).includes(num));
+  let desp=[];if(ult){for(let k=0;k<=7;k++){const t=shiftD(ult,k);if((G.get(t)||[]).includes(num))desp.push("Gana Más "+fmtDate(t));if((N.get(t)||[]).includes(num))desp.push("Nacional "+fmtDate(t))}}
+  const lastR=drawsFor("real").find(d=>!d.ex);
+  return `<div class="card"><p class="label">Repeticiones con la Real</p>
+    <p class="note">La Real sale a las 12:55 p. m., antes que Gana Más y Nacional. Por azar sería ${az0.toFixed(1)} % y ${az1.toFixed(1)} %.</p>
+    ${rows.map(r=>`<div class="row" style="flex-wrap:wrap;gap:4px"><span style="flex:1 1 60%;min-width:0">${r.t}</span><small style="flex-basis:100%">Igual: <b>${r.r0.p.toFixed(1)} %</b> ${bar(r.r0.p,az0)}<br>Igual o al revés: <b>${r.r1.p.toFixed(1)} %</b> ${bar(r.r1.p,az1)} · ${r.r1.h} de ${r.r1.n} días</small></div>`).join("")}
+    ${lastR?`<p class="detail">De la última Real (${fmtDate(lastR.date)}), para Gana Más y Nacional:</p><div class="balls" style="flex-wrap:wrap">${mir(lastR.n).map(x=>ball(x,lastR.n.includes(x)?"first":"")).join("")}</div>`:""}
+    <p class="detail" style="margin-top:10px">Últimas repeticiones con la Real:</p>
+    <div class="list">${ev.slice(0,8).map(e=>`<div class="draw"><div class="draw-meta"><div class="draw-date">${fmtDate(e.d2)}</div><span class="draw-small">${e.t}${e.rev?` · al revés (${p2(e.x)} → ${p2(e.y)})`:""}</span></div><div class="balls">${ball(e.y,"first")}</div></div>`).join("")}</div>
+  </div>
+  <div class="card"><p class="label">Caso del 40 · Real → Gana Más / Nacional</p>
+    <div class="row" style="flex-wrap:wrap;gap:4px"><span style="flex:1 1 60%;min-width:0">Cuando el 40 sale en la Real, ¿sale el 40 en Gana Más o Nacional ese día o en los 3 siguientes?</span><b>${con.length?(100*h/con.length).toFixed(0)+" %":"—"}</b><small style="flex-basis:100%">${h} de ${con.length} veces desde abril 2018 · cualquier día normal: ${(100*hb/base.length).toFixed(0)} %</small></div>
+    ${ult?`<p class="detail">Último 40 en la Real: <b>${fmtDate(ult)}</b>. ${desp.length?"Después salió en: "+desp.join(", "):"Todavía no ha salido el 40 en Gana Más ni Nacional después de esa fecha."}</p>`:""}
+  </div>`;
+}
+function renderEst(){
+  const list=drawsFor(state.lot);const el=document.getElementById("p-est");
+  if(list.length<5){el.innerHTML=`<div class="card"><p>Necesitas al menos 5 sorteos para ver estadística.</p></div>`;return}
+  const s=stats(list);const max=Math.max(...s.freq);
+  const col=(cls,t,arr,fn)=>`<div class="card stat ${cls}"><h3>${t}</h3>${arr.map(n=>`<div class="row"><b>${p2(n)}</b><small>${fn(n)}</small></div>`).join("")}</div>`;
+  const bar=(arr,lbl)=>{const m=Math.max(...arr)||1;return `<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px;align-items:end;height:90px">${arr.map(v=>`<div title="${v}" style="background:var(--accent);opacity:${.35+.65*v/m};height:${Math.max(4,v/m*80)}px;border-radius:4px 4px 0 0"></div>`).join("")}</div><div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px;text-align:center;font:700 .8rem var(--display);color:var(--muted)">${arr.map((_,i)=>`<span>${lbl(i)}</span>`).join("")}</div>`};
+  const det=sel==null?`<p class="note">Toca un número del mapa para ver su detalle.</p>`:
+    `<p class="detail"><b style="font:800 1.4rem var(--display)">${p2(sel)}</b> · salió <b>${s.freq[sel]}</b> veces en ${s.total} sorteos · ${s.last[sel]<0?'no ha salido en este periodo':s.last[sel]===0?'salió en el último sorteo':`hace <b>${s.last[sel]}</b> sorteos`}</p>`;
+  el.innerHTML=`<div class="trio">
+    ${col("hot","Calientes",s.hot,n=>`${s.freq[n]} veces`)}
+    ${col("cold","Fríos",s.cold,n=>`${s.freq[n]} veces`)}
+    ${col("late","Atrasados",s.late,n=>`${s.gap(n)} sorteos`)}
+  </div>
+  <div class="card"><p class="label">Mapa de frecuencia 00–99 · ${s.total} sorteos</p>
+    <div class="grid10">${s.freq.map((v,n)=>`<button class="cell" data-n="${n}" style="background:${heat(v,max)};${sel===n?'outline:2px solid var(--ink)':''}" aria-label="${p2(n)}: ${v} veces">${p2(n)}</button>`).join("")}</div>
+    <div class="legend"><span>Menos salidas</span><span>Más salidas (máx. ${max})</span></div>
+    ${det}
+  </div>
+  <div class="card"><p class="label">Por decena (00–09, 10–19…)</p>${bar(s.tens,i=>i+"0")}</div>
+  <div class="card"><p class="label">Por terminal (último dígito)</p>${bar(s.ends,i=>i)}</div>
+  ${renderRep()}
+  <p class="note">Cada sorteo es independiente: estos conteos describen el pasado, no garantizan el próximo resultado.</p>`;
+}
+let picks=null;
+function renderGen(){
+  const list=drawsFor(state.lot);const el=document.getElementById("p-gen");
+  if(list.length<5){el.innerHTML=`<div class="card"><p>Necesitas al menos 5 sorteos para armar jugadas.</p></div>`;return}
+  const s=stats(list);
+  const method=document.getElementById("g-m")?.value||"hot";
+  el.innerHTML=`<div class="card"><p class="label">Armar jugada · ${lotName(state.lot)}</p>
+    <label for="g-m">Criterio<select id="g-m">
+      <option value="hot">Calientes (más frecuentes)</option>
+      <option value="late">Atrasados (más tiempo sin salir)</option>
+      <option value="mix">Mixto (2 calientes + 1 atrasado)</option>
+      <option value="rand">Al azar</option>
+    </select></label>
+    <button class="btn" id="g-go" type="button">Generar 3 números</button>
+    <div class="pick-out" id="g-out">${picks?picks.map((n,i)=>ball(n,i===0?"first":"")).join(""):'<p class="note">Elige un criterio y genera.</p>'}</div>
+    ${picks?`<div class="actions"><button class="btn ghost" id="g-copy" type="button">Copiar jugada</button></div>`:''}
+    <p class="msg" id="g-msg" aria-live="polite"></p>
+  </div>
+  <div class="card"><p class="label">Pares que más salen juntos</p>${pairs(list).map(([a,b,c])=>`<div class="row"><b>${p2(a)} – ${p2(b)}</b><small>${c} veces juntos</small></div>`).join("")}</div>
+  <p class="note">Las jugadas se basan en conteos del historial cargado. Juega con responsabilidad.</p>`;
+  document.getElementById("g-m").value=method;
+}
+function pairs(list){const m=new Map();list.forEach(d=>{const u=[...new Set(d.n)].sort((a,b)=>a-b);for(let i=0;i<u.length;i++)for(let j=i+1;j<u.length;j++){const k=u[i]*100+u[j];m.set(k,(m.get(k)||0)+1)}});
+  return [...m].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,c])=>[Math.floor(k/100),k%100,c])}
+function weightedPick(pool,n){const out=[];const p=[...pool];while(out.length<n&&p.length){const i=Math.floor(Math.random()*Math.min(p.length,10));out.push(p.splice(i,1)[0])}return out}
+function generate(){
+  const list=drawsFor(state.lot),s=stats(list),m=document.getElementById("g-m").value;
+  const nums=[...Array(100).keys()];
+  const byHot=[...nums].sort((a,b)=>s.freq[b]-s.freq[a]);
+  const byLate=[...nums].sort((a,b)=>s.gap(b)-s.gap(a));
+  if(m==="hot")picks=weightedPick(byHot,3);
+  else if(m==="late")picks=weightedPick(byLate,3);
+  else if(m==="mix"){const h=weightedPick(byHot,2);picks=[...h,weightedPick(byLate.filter(x=>!h.includes(x)),1)[0]]}
+  else{picks=[];while(picks.length<3){const r=Math.floor(Math.random()*100);if(!picks.includes(r))picks.push(r)}}
+  renderGen();
+}
+function renderAdd(){
+  const sl=document.getElementById("a-lot");sl.innerHTML=LOTS.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");sl.value=state.lot;
+  const dt=document.getElementById("a-date");if(!dt.value)dt.value=today();
+}
+function render(){renderChips();({hoy:renderHoy,res:renderRes,est:renderEst,gen:renderGen,add:renderAdd,ala:renderAla})[state.tab]();revisarAlarmas()}
+function setTab(t){state.tab=t;document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
+  ["hoy","res","est","gen","add","ala"].forEach(k=>document.getElementById("p-"+k).hidden=k!==t);render()}
+function msg(id,t,ok){const e=document.getElementById(id);e.textContent=t;e.className="msg "+(ok?"ok":"err")}
+function parseNum(v){v=String(v).trim();return /^\d{1,2}$/.test(v)?Number(v):null}
+
+
+// ---------- Alarmas de activación ----------
+const AKEY="f26-alarmas-v1", VKEY="f26-alarmas-vistas";
+// Las rutas NO van en el código público. La versión personal las recibe al armarse (window.F26_RUTAS).
+const MODO=window.F26_RUTAS?"personal":"publico";
+const RUTAS0=window.F26_RUTAS||[];
+function cargarRutas(){try{const r=JSON.parse(localStorage.getItem(AKEY));if(Array.isArray(r))return r.filter(x=>(GRUPOS[x.src]||LOTS.some(l=>l.id===x.src))&&(GRUPOS[x.dst]||LOTS.some(l=>l.id===x.dst)))}catch(e){}return RUTAS0.map(x=>({...x}))}
+let rutas=cargarRutas();
+if(MODO==="personal"){const k=r=>r.src+r.o+"-"+r.dst+r.r;RUTAS0.forEach(x=>{if(!rutas.some(y=>k(y)===k(x)))rutas.push({...x})})}
+function guardarRutas(){try{localStorage.setItem(AKEY,JSON.stringify(rutas))}catch(e){}}
+const GRUPOS={gn:{n:"Gana Más o Nacional",l:["gm","nn"]},g4:{n:"Gana Más, Nacional, Leidsa o Real",l:["gm","nn","ld","real"]}};
+const shortName=id=>GRUPOS[id]?GRUPOS[id].n:lotName(id).replace("Leidsa Quiniela Palé","Leidsa").replace("Lotería ","").replace("Nacional Noche","Nacional");
+const lotsDe=id=>GRUPOS[id]?GRUPOS[id].l:[id];
+function evalRuta(r,desde){
+  const now=rdNow(),out=[],porDia=new Map();
+  lotsDe(r.src).forEach(sl=>drawsFor(sl).forEach(d=>{if(d.ex||d.date<desde||!d.n.includes(r.o))return;
+    const v=porDia.get(d.date);if(!v||hourMin(sl)<hourMin(v.lot))porDia.set(d.date,{...d,lot:sl})}));
+  const T=lotsDe(r.dst).map(tl=>[tl,new Map(drawsFor(tl).filter(d=>!d.ex).map(d=>[d.date,d.n]))]);
+  [...porDia.values()].forEach(d=>{let hit=null,pend=false,dias=0;
+    for(let k=0;k<=r.dias&&!hit;k++){const dd=shiftD(d.date,k);let alguno=false;
+      for(const [tl,m] of T){if(k===0&&!(hourMin(tl)>hourMin(d.lot)))continue;if(k===0&&tl===d.lot)continue;
+        const w=m.get(dd);if(w){alguno=true;if(w.includes(r.r)){hit={date:dd,n:w,lot:tl};break}}else if(dd>=now.date)pend=true}
+      if(alguno)dias++}
+    out.push({r,d,hit,dias,st:hit?"ok":pend?"act":"fail",fin:shiftD(d.date,r.dias)})});
+  return out.sort((a,b)=>b.d.date.localeCompare(a.d.date));
+}
+function alarmasRecientes(){const desde=shiftD(rdNow().date,-(Math.max(...rutas.map(r=>r.dias),3)+1));
+  return rutas.flatMap(r=>evalRuta(r,desde)).filter(a=>a.st==="act"||(a.st==="ok"&&a.hit.date>=shiftD(rdNow().date,-1)))}
+function txtAlarma(a){const r=a.r;
+  return a.st==="ok"?`<b>Se cumplió</b> · ${shortName(a.hit.lot)} sacó ${p2(r.r)} el ${fmtDate(a.hit.date)}<small>Activó ${shortName(a.d.lot)} ${p2(r.o)} del ${fmtDate(a.d.date)}</small>`
+    : `<b>${shortName(a.d.lot)} sacó ${p2(r.o)}</b> → vigila el <b>${p2(r.r)}</b> en ${shortName(r.dst)}<small>Desde ${fmtDate(a.d.date)} · hasta ${fmtDate(a.fin)}</small>`}
+function itemAlarma(a){return `<div class="al-item ${a.st}"><span class="al-ic">${a.st==="ok"?"✓":a.st==="act"?"!":"–"}</span><div class="al-txt">${txtAlarma(a)}</div></div>`}
+function bannerAlarmas(){if(MODO==="publico")return bannerPublico();const l=alarmasRecientes();if(!l.length)return "";
+  const ok=l.some(a=>a.st==="ok");
+  return `<div class="card alarm${ok&&!l.some(a=>a.st==="act")?" ok":""}"><p class="label">Alarmas de activación</p>${l.map(itemAlarma).join("")}<button class="btn ghost" type="button" data-tabgo="ala">Ver todas las alarmas</button></div>`}
+
+// ---------- Versión para compartir: solo números activados (data/activos.json, sin el origen) ----------
+let activos=[];
+const nombreLots=l=>l.map(x=>shortName(x)).join(", ");
+function activosRecientes(){const hoy=rdNow().date,ayer=shiftD(hoy,-1);
+  return activos.filter(a=>a.estado==="activa"&&a.hasta>=hoy||a.estado==="cumplida"&&a.cumplio&&a.cumplio.date>=ayer)}
+function diasQuedan(h){const n=Math.round((new Date(h+"T12:00:00")-new Date(rdNow().date+"T12:00:00"))/864e5)+1;return n<=1?"último día":`quedan ${n} días`}
+function itemActivo(a){const ok=a.estado==="cumplida";
+  return `<div class="al-item ${ok?"ok":"act"}"><span class="al-ic">${ok?"✓":"!"}</span><div class="al-txt">${ok?
+    `<b>Se cumplió el ${p2(a.n)}</b> · ${shortName(a.cumplio.lot)} · ${fmtDate(a.cumplio.date)}`:
+    `<b>Número activado: ${p2(a.n)}</b><small>Vigilar en ${nombreLots(a.lots)} · hasta ${fmtDate(a.hasta)} · ${diasQuedan(a.hasta)}</small>`}</div></div>`}
+function bannerPublico(){const l=activosRecientes();if(!l.length)return "";
+  return `<div class="card alarm${l.every(a=>a.estado==="cumplida")?" ok":""}"><p class="label">Números activados</p>${l.map(itemActivo).join("")}<button class="btn ghost" type="button" data-tabgo="ala">Ver alarmas</button></div>`}
+function renderAlaPublico(){const el=document.getElementById("p-ala"),l=activosRecientes();
+  const perm=window.Notification?Notification.permission:"no";
+  el.innerHTML=`<div class="card${l.length?" alarm":""}"><p class="label">Números activados</p>
+    ${l.length?l.map(itemActivo).join(""):`<p class="note">No hay números activados ahora. Cuando se active uno, aparece aquí y arriba en <b>Hoy</b>, y suena la alarma.</p>`}
+    ${perm==="default"?`<button class="btn" type="button" id="al-perm">Activar avisos en el teléfono</button>`:""}
+    <p class="note">Cada número activado se vigila durante los días indicados. Cuando sale, se marca como cumplido.</p></div>`}
+function revisarPublico(){if(!activos.length)return;const l=activosRecientes();let vistas=null;
+  try{vistas=JSON.parse(localStorage.getItem(VKEY+"-pub"))}catch(e){}
+  const clave=a=>a.id+"-"+a.estado;
+  if(!Array.isArray(vistas)){try{localStorage.setItem(VKEY+"-pub",JSON.stringify(l.map(clave)))}catch(e){}return}
+  const nuevas=l.filter(a=>!vistas.includes(clave(a)));
+  nuevas.forEach(a=>{if(a.estado==="cumplida")avisar("✓ Se cumplió el "+p2(a.n),`Salió en ${shortName(a.cumplio.lot)}`);
+    else avisar("🔔 Número activado: "+p2(a.n),`Vigilar en ${nombreLots(a.lots)} hasta ${fmtDate(a.hasta)}`)});
+  if(nuevas.length)try{localStorage.setItem(VKEY+"-pub",JSON.stringify([...vistas,...nuevas.map(clave)].slice(-300)))}catch(e){}}
+let audioCtx=null;
+function pitar(){try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.frequency.value=880;g.gain.value=.15;o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.35)}catch(e){}}
+function avisar(titulo,cuerpo){try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}pitar();
+  try{if(window.Notification&&Notification.permission==="granted")new Notification(titulo,{body:cuerpo,icon:"icon-192.png",tag:titulo+cuerpo})}catch(e){}
+  try{if(window.F26Android)F26Android.notificar(titulo,cuerpo)}catch(e){}}
+function revisarAlarmas(){if(MODO==="publico")return revisarPublico();if(!web.size)return;const l=alarmasRecientes();let vistas=null;
+  try{vistas=JSON.parse(localStorage.getItem(VKEY))}catch(e){}
+  const clave=a=>`${a.r.src}${a.r.o}-${a.r.dst}${a.r.r}-${a.d.date}-${a.st}`;
+  if(!Array.isArray(vistas)){try{localStorage.setItem(VKEY,JSON.stringify(l.map(clave)))}catch(e){}return}
+  const nuevas=l.filter(a=>!vistas.includes(clave(a)));
+  nuevas.forEach(a=>{const r=a.r;
+    if(a.st==="ok")avisar("✓ Se cumplió la alarma",`${shortName(r.dst)} sacó ${p2(r.r)} (activó ${shortName(r.src)} ${p2(r.o)})`);
+    else avisar("🔔 Alarma activada",`${shortName(r.src)} sacó ${p2(r.o)}: vigila el ${p2(r.r)} en ${shortName(r.dst)} hasta ${fmtDate(a.fin)}`)});
+  if(nuevas.length)try{localStorage.setItem(VKEY,JSON.stringify([...vistas,...nuevas.map(clave)].slice(-300)))}catch(e){}
+}
+function renderAla(){if(MODO==="publico")return renderAlaPublico();const el=document.getElementById("p-ala");const rec=alarmasRecientes();
+  const opts=sel=>[...LOTS,{id:"gn",name:"Gana Más o Nacional"},{id:"g4",name:"Gana Más, Nacional, Leidsa o Real"}].map(l=>`<option value="${l.id}"${l.id===sel?" selected":""}>${l.name}</option>`).join("");
+  const perm=window.Notification?Notification.permission:"no";
+  el.innerHTML=`<div class="card${rec.length?" alarm":""}"><p class="label">Alarmas activas</p>
+    ${rec.length?rec.map(itemAlarma).join(""):`<p class="note">Ninguna ruta está activa ahora. Cuando salga un número de origen, aparece aquí y arriba en <b>Hoy</b>.</p>`}
+    ${perm==="default"?`<button class="btn" type="button" id="al-perm">Activar avisos en el teléfono</button>`:perm==="granted"?`<p class="note">Avisos activados: el teléfono vibra y suena cuando una alarma se activa o se cumple con la app abierta.</p>`:`<p class="note">Con la app abierta, el teléfono vibra y suena cuando una alarma se activa o se cumple.</p>`}
+  </div>
+  <div class="card"><p class="label">Mis rutas (${rutas.length})</p>
+    <p class="note">Cada ruta: si sale el número de origen, la app vigila el número de respuesta en la otra lotería durante los días que pongas. Debajo: cuántas veces se cumplió en todo el historial y cuánto daría el puro azar.</p>
+    ${rutas.map((r,i)=>{const h=evalRuta(r,"0000").filter(a=>a.st!=="act"&&a.dias>0);const ok=h.filter(a=>a.st==="ok").length;
+      const az=h.length?100*h.reduce((s,a)=>s+1-Math.pow(.97,a.dias*lotsDe(r.dst).length),0)/h.length:0;
+      return `<div class="rt"><div class="al-txt"><b>${shortName(r.src)} ${p2(r.o)} → ${shortName(r.dst)} ${p2(r.r)}</b><small>${r.dias} día${r.dias>1?"s":""} · se cumplió ${ok} de ${h.length} (${h.length?(100*ok/h.length).toFixed(0):0} %) · azar ~${az.toFixed(0)} %</small></div><button class="x" type="button" data-delruta="${i}" aria-label="Borrar ruta">Borrar</button></div>`}).join("")}
+  </div>
+  <div class="card"><p class="label">Agregar ruta</p>
+    <div class="fields5">
+      <label for="al-src">Si sale en<select id="al-src">${opts("nn")}</select></label>
+      <label for="al-o">el número<input class="num" id="al-o" inputmode="numeric" maxlength="2" placeholder="57"></label>
+      <label for="al-dst">vigilar en<select id="al-dst">${opts("gm")}</select></label>
+      <label for="al-r">el número<input class="num" id="al-r" inputmode="numeric" maxlength="2" placeholder="62"></label>
+      <label for="al-d">durante<select id="al-d">${[1,2,3,4,5,7,10,15].map(n=>`<option value="${n}"${n===3?" selected":""}>${n} día${n>1?"s":""}</option>`).join("")}</select></label>
+    </div>
+    <button class="btn" type="button" id="al-add">Agregar ruta</button>
+    <p class="msg" id="al-msg" aria-live="polite"></p>
+    <button class="btn ghost" type="button" id="al-reset">Volver a las rutas de la auditoría</button>
+  </div>`}
+document.addEventListener("click",e=>{
+  const tg=e.target.closest("[data-tabgo]");if(tg){setTab(tg.dataset.tabgo);window.scrollTo(0,0);return}
+  const dl=e.target.closest("[data-delruta]");if(dl){rutas.splice(+dl.dataset.delruta,1);guardarRutas();renderAla();return}
+  if(e.target.id==="al-perm"){pitar();try{Notification.requestPermission().then(()=>renderAla())}catch(err){renderAla()}}
+  if(e.target.id==="al-reset"){rutas=RUTAS0.map(x=>({...x}));guardarRutas();renderAla()}
+  if(e.target.id==="al-add"){const o=parseNum(document.getElementById("al-o").value),r=parseNum(document.getElementById("al-r").value);
+    if(o===null||r===null)return msg("al-msg","Escribe los dos números, entre 00 y 99");
+    rutas.push({src:document.getElementById("al-src").value,o,dst:document.getElementById("al-dst").value,r,dias:+document.getElementById("al-d").value});
+    guardarRutas();renderAla();msg("al-msg","Ruta agregada",true)}
+});
+document.addEventListener("click",e=>{
+  if(e.target.id==="b-more"){state.histN=(state.histN||30)+60;renderRes();return}
+  const dy=e.target.closest("[data-day]");if(dy){state.day=dy.dataset.day;renderHoy();return}
+  const go=e.target.closest("[data-go]");if(go){state.histN=30;state.lot=go.dataset.go;save();setTab("res");window.scrollTo(0,0);return}
+  const c=e.target.closest(".chip");if(c){state.histN=30;state.lot=c.dataset.lot;sel=null;picks=null;save();render();return}
+  const t=e.target.closest(".tab");if(t){setTab(t.dataset.tab);return}
+  const cell=e.target.closest(".cell");if(cell){sel=Number(cell.dataset.n);renderEst();return}
+  if(e.target.id==="g-go")generate();
+  if(e.target.id==="g-copy"){const txt=`${lotName(state.lot)}: ${picks.map(p2).join(" - ")}`;
+    navigator.clipboard?.writeText(txt).then(()=>msg("g-msg","Jugada copiada",true),()=>msg("g-msg",txt,true))}
+  if(e.target.id==="b-imp"){const lines=document.getElementById("imp").value.split(/\n+/).map(l=>l.trim()).filter(Boolean);let ok=0,bad=0;
+    lines.forEach(l=>{const p=l.split(/[,;\t ]+/);const n=p.slice(1,4).map(parseNum);
+      if(/^\d{4}-\d{2}-\d{2}$/.test(p[0])&&n.length===3&&n.every(x=>x!==null)){upsert({lot:state.lot,date:p[0],n});ok++}else bad++});
+    save();msg("i-msg",`${ok} sorteos importados a ${lotName(state.lot)}${bad?` · ${bad} líneas no se entendieron (revisa el formato)`:''}`,ok>0)}
+  if(e.target.id==="b-exp"){const txt=drawsFor(state.lot).map(d=>`${d.date}, ${d.n.map(p2).join(", ")}`).join("\n");
+    navigator.clipboard?.writeText(txt).then(()=>msg("i-msg","Historial copiado",true),()=>{document.getElementById("imp").value=txt;msg("i-msg","Historial puesto en el cuadro; cópialo desde ahí",true)})}
+  if(e.target.id==="b-clr"){const n=state.draws.filter(d=>d.ex).length;state.draws=state.draws.filter(d=>!d.ex);save();msg("c-msg",`${n} sorteos de ejemplo borrados`,true)}
+  if(e.target.id==="b-seed"){sample().forEach(d=>{if(!state.draws.some(x=>x.lot===d.lot&&x.date===d.date))state.draws.push(d)});save();msg("c-msg","Ejemplos cargados",true)}
+});
+document.getElementById("f-add").addEventListener("submit",e=>{e.preventDefault();
+  const lot=document.getElementById("a-lot").value,date=document.getElementById("a-date").value;
+  const n=["a-1","a-2","a-3"].map(id=>parseNum(document.getElementById(id).value));
+  if(!date)return msg("a-msg","Elige la fecha del sorteo");
+  if(n.some(x=>x===null))return msg("a-msg","Escribe los tres números, cada uno entre 00 y 99");
+  upsert({lot,date,n});state.lot=lot;save();renderChips();
+  ["a-1","a-2","a-3"].forEach(id=>document.getElementById(id).value="");
+  msg("a-msg",`Guardado: ${lotName(lot)} · ${fmtDate(date)} · ${n.map(p2).join(" - ")}`,true);
+});
+load();render();connectDb();
+setInterval(()=>{if(state.tab==="hoy"&&!document.hidden&&document.activeElement?.id!=="day-pick")renderHoy()},30000);
+document.addEventListener("change",e=>{if(e.target.id==="day-pick"&&e.target.value){state.day=e.target.value;renderHoy()}});
+document.getElementById("b-ref").addEventListener("click",refresh);
+</script>
+
+</body>
+</html>

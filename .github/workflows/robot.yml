@@ -1,0 +1,43 @@
+name: Robot de resultados
+on:
+  schedule:
+    # Horas en UTC (República Dominicana = UTC-4). Cada corrida vigila hasta 45 min.
+    - cron: '2 16 * * *'    # 12:02 p. m.  La Primera Día
+    - cron: '57 16 * * *'   # 12:57 p. m.  Real
+    - cron: '32 18 * * *'   # 2:32 p. m.   Gana Más / NY Tarde
+    - cron: '32 19 * * *'   # 3:32 p. m.   NY Tarde (invierno)
+    - cron: '57 19 * * 0'   # 3:57 p. m.   Leidsa domingo
+    - cron: '2 23 * * *'    # 7:02 p. m.   La Primera Noche
+    - cron: '52 23 * * *'   # 7:52 p. m.   Loteka
+    - cron: '57 0 * * *'    # 8:57 p. m.   Leidsa / Nacional
+    - cron: '32 2 * * *'    # 10:32 p. m.  NY Noche
+    - cron: '32 3 * * *'    # 11:32 p. m.  NY Noche (invierno)
+    - cron: '17 */2 * * *'  # repaso cada 2 horas
+  workflow_dispatch:
+  push:
+    paths: ['robot.py', '.github/workflows/robot.yml']
+permissions:
+  contents: write
+concurrency:
+  group: robot
+  cancel-in-progress: true
+jobs:
+  robot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      ALARMAS: ${{ secrets.ALARMAS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Configurar git
+        run: |
+          git config user.name "robot-f26"
+          git config user.email "robot-f26@users.noreply.github.com"
+      - name: Repaso
+        if: github.event.schedule == '17 */2 * * *' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        run: python robot.py --push --prueba-log
+      - name: Vigilar sorteos
+        if: (github.event_name == 'schedule' && github.event.schedule != '17 */2 * * *') || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: python robot.py --vigilar 45

@@ -1,0 +1,7 @@
+__pycache__/
+*.tmp
+android/.gradle/
+android/build/
+android/app/build/
+*.jks
+!android/firma/prueba.jks
