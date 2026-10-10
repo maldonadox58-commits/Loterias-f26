@@ -438,7 +438,7 @@ function renderEst(){
   </div>
   <div class="card"><p class="label">Por decena (00–09, 10–19…)</p>${bar(s.tens,i=>i+"0")}</div>
   <div class="card"><p class="label">Por terminal (último dígito)</p>${bar(s.ends,i=>i)}</div>
-  ${renderRep()}
+  ${MODO==="personal"?renderRep():""}
   <p class="note">Cada sorteo es independiente: estos conteos describen el pasado, no garantizan el próximo resultado.</p>`;
 }
 let picks=null;
