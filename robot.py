@@ -125,7 +125,9 @@ def _minutos(cod, fecha):
 
 def calcular_activos(db):
     try:
-        rutas = json.loads(os.environ.get("ALARMAS", "") or "[]")
+        crudo = os.environ.get("ALARMAS", "")
+        rutas = json.loads(crudo or "[]")
+        log(f"alarmas: {len(rutas)} rutas cargadas" if rutas else "alarmas: el secreto ALARMAS está vacío o no existe")
     except Exception:
         log("ALARMAS: el secreto no es JSON válido")
         return
