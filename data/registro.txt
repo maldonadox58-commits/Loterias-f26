@@ -1,4 +1,3 @@
-[2026-10-11 02:52 PM] alarmas: 11 rutas cargadas
 [2026-10-11 02:53 PM] nada pendiente
 [2026-10-11 03:43 PM] nada pendiente
 [2026-10-11 04:00 PM] buscando: ld
@@ -398,3 +397,4 @@
 [2026-10-13 02:56 PM] NUEVO ny-t 2026-10-13: 50 - 23 - 40
 [2026-10-13 02:56 PM] alarmas: 11 rutas cargadas
 [2026-10-13 02:57 PM] nada pendiente
+[2026-10-13 03:57 PM] nada pendiente
