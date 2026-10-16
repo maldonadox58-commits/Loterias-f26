@@ -418,6 +418,53 @@ function renderReal(G,N,bar,az0,az1,mir){
     ${ult?`<p class="detail">Último 40 en la Real: <b>${fmtDate(ult)}</b>. ${desp.length?"Después salió en: "+desp.join(", "):"Todavía no ha salido el 40 en Gana Más ni Nacional después de esa fecha."}</p>`:""}
   </div>`;
 }
+// ---------- Comportamiento de respuesta (solo versión personal) ----------
+let comp={nums:"38-46",src:"nn",dst:"g4",dias:3,res:null};
+function compCalcular(){
+  const nums=String(comp.nums).split(/[^0-9]+/).filter(Boolean).map(Number).filter(n=>n>=0&&n<=99).slice(0,3);
+  if(!nums.length)return {err:"Escribe uno, dos o tres números (ej. 38 o 38-46)."};
+  const srcL=lotsDe(comp.src),dstL=lotsDe(comp.dst),D=+comp.dias;
+  const T=dstL.map(l=>[l,new Map(drawsFor(l).filter(d=>!d.ex).map(d=>[d.date,d.n]))]);
+  const fechasT=new Set();T.forEach(([,m])=>m.forEach((v,k)=>fechasT.add(k)));
+  // ventana: números que salen en destino después del sorteo de origen, hasta D días
+  const ventana=(fecha,lot)=>{const s=new Set();let hay=false;
+    for(let k=0;k<=D;k++){const dd=shiftD(fecha,k);
+      for(const [tl,m] of T){if(k===0&&(tl===lot||hourMin(tl)<=hourMin(lot)))continue;const w=m.get(dd);if(w){hay=true;w.forEach(x=>s.add(x))}}}
+    return hay?s:null};
+  const ev=[];srcL.forEach(sl=>drawsFor(sl).forEach(d=>{if(!d.ex&&nums.every(n=>d.n.includes(n)))ev.push({date:d.date,lot:sl})}));
+  const hoy=rdNow().date,cuenta=Array(100).fill(0);let n=0;const ult=[];
+  ev.sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{if(shiftD(e.date,D)>=hoy)return;const s=ventana(e.date,e.lot);if(!s)return;n++;s.forEach(x=>cuenta[x]++);ult.push(e)});
+  // normal: lo mismo desde cualquier sorteo del origen (sin pedir el número)
+  const base=Array(100).fill(0);let nb=0;
+  srcL.forEach(sl=>drawsFor(sl).forEach(d=>{if(d.ex||shiftD(d.date,D)>=hoy)return;const s=ventana(d.date,sl);if(!s)return;nb++;s.forEach(x=>base[x]++)}));
+  const filas=[...Array(100).keys()].map(x=>{const p=nb?base[x]/nb:0,esp=n*p,z=esp>0?(cuenta[x]-esp)/Math.sqrt(esp*(1-p)||1):0;
+    return {x,c:cuenta[x],pct:n?100*cuenta[x]/n:0,norm:100*p,z}}).sort((a,b)=>b.z-a.z||b.c-a.c);
+  return {nums,n,filas,ult:ult.slice(-5).reverse()};
+}
+function renderComp(){
+  const opts=sel=>[...LOTS,{id:"gn",name:"Gana Más o Nacional"},{id:"g4",name:"Gana Más, Nacional, Leidsa o Real"}].map(l=>`<option value="${l.id}"${l.id===sel?" selected":""}>${l.name}</option>`).join("");
+  const r=comp.res;
+  return `<div class="card"><p class="label">Comportamiento de respuesta</p>
+    <p class="note">Cuando sale un número (o un par en el mismo sorteo), ¿qué números salen después y cuánto más que lo normal?</p>
+    <div class="fields5">
+      <label for="cp-n">Si sale<input id="cp-n" inputmode="numeric" value="${comp.nums}" placeholder="38-46"></label>
+      <label for="cp-s">en<select id="cp-s">${opts(comp.src)}</select></label>
+      <label for="cp-d">¿qué responde en?<select id="cp-d">${opts(comp.dst)}</select></label>
+      <label for="cp-w">durante<select id="cp-w">${[0,1,2,3,5,7,10].map(d=>`<option value="${d}"${+comp.dias===d?" selected":""}>${d===0?"el mismo día":d+" día"+(d>1?"s":"")}</option>`).join("")}</select></label>
+    </div>
+    <button class="btn" type="button" id="cp-go">Ver comportamiento</button>
+    ${!r?"":r.err?`<p class="msg err">${r.err}</p>`:r.n<8?`<p class="note">Solo ${r.n} veces en el historial: muy pocas para sacar conclusiones.</p>`:`
+      <p class="detail"><b>${r.nums.map(p2).join("-")}</b> salió <b>${r.n}</b> veces con datos para medir. Los que más respondieron por encima de lo normal:</p>
+      ${r.filas.slice(0,12).map(f=>`<div class="row" style="flex-wrap:wrap;gap:4px"><b>${p2(f.x)}</b><small>${f.c} de ${r.n} (${f.pct.toFixed(0)} %) · normal ${f.norm.toFixed(0)} % · ${f.norm>0?"×"+(f.pct/f.norm).toFixed(1):""}${f.z>=3.5?' · <span style="color:var(--hot);font-weight:700">fuerte</span>':f.z>=2.5?' · <span style="color:var(--hot)">por encima</span>':""}</small></div>`).join("")}
+      <p class="note">Ojo: de 100 números siempre hay algunos arriba por casualidad. «Fuerte» = muy por encima de lo normal (z ≥ 3.5); aun así, sígalo hacia adelante antes de confiar.</p>
+      ${r.ult.length?`<p class="note">Últimas veces: ${r.ult.map(e=>fmtDate(e.date)+" ("+shortName(e.lot)+")").join(" · ")}</p>`:""}`}
+  </div>`;
+}
+document.addEventListener("click",e=>{if(e.target.id!=="cp-go")return;
+  comp.nums=document.getElementById("cp-n").value;comp.src=document.getElementById("cp-s").value;
+  comp.dst=document.getElementById("cp-d").value;comp.dias=+document.getElementById("cp-w").value;
+  e.target.textContent="Calculando…";setTimeout(()=>{comp.res=compCalcular();renderEst();
+    const c=document.getElementById("cp-go");c&&c.scrollIntoView({block:"center"})},30)});
 function renderEst(){
   const list=drawsFor(state.lot);const el=document.getElementById("p-est");
   if(list.length<5){el.innerHTML=`<div class="card"><p>Necesitas al menos 5 sorteos para ver estadística.</p></div>`;return}
@@ -438,7 +485,7 @@ function renderEst(){
   </div>
   <div class="card"><p class="label">Por decena (00–09, 10–19…)</p>${bar(s.tens,i=>i+"0")}</div>
   <div class="card"><p class="label">Por terminal (último dígito)</p>${bar(s.ends,i=>i)}</div>
-  ${MODO==="personal"?renderRep():""}
+  ${MODO==="personal"?renderComp()+renderRep():""}
   <p class="note">Cada sorteo es independiente: estos conteos describen el pasado, no garantizan el próximo resultado.</p>`;
 }
 let picks=null;
