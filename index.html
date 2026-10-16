@@ -473,7 +473,7 @@ function renderEst(){
   const bar=(arr,lbl)=>{const m=Math.max(...arr)||1;return `<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px;align-items:end;height:90px">${arr.map(v=>`<div title="${v}" style="background:var(--accent);opacity:${.35+.65*v/m};height:${Math.max(4,v/m*80)}px;border-radius:4px 4px 0 0"></div>`).join("")}</div><div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px;text-align:center;font:700 .8rem var(--display);color:var(--muted)">${arr.map((_,i)=>`<span>${lbl(i)}</span>`).join("")}</div>`};
   const det=sel==null?`<p class="note">Toca un número del mapa para ver su detalle.</p>`:
     `<p class="detail"><b style="font:800 1.4rem var(--display)">${p2(sel)}</b> · salió <b>${s.freq[sel]}</b> veces en ${s.total} sorteos · ${s.last[sel]<0?'no ha salido en este periodo':s.last[sel]===0?'salió en el último sorteo':`hace <b>${s.last[sel]}</b> sorteos`}</p>`;
-  el.innerHTML=`<div class="trio">
+  el.innerHTML=`${MODO==="personal"?renderComp():""}<div class="trio">
     ${col("hot","Calientes",s.hot,n=>`${s.freq[n]} veces`)}
     ${col("cold","Fríos",s.cold,n=>`${s.freq[n]} veces`)}
     ${col("late","Atrasados",s.late,n=>`${s.gap(n)} sorteos`)}
@@ -485,7 +485,7 @@ function renderEst(){
   </div>
   <div class="card"><p class="label">Por decena (00–09, 10–19…)</p>${bar(s.tens,i=>i+"0")}</div>
   <div class="card"><p class="label">Por terminal (último dígito)</p>${bar(s.ends,i=>i)}</div>
-  ${MODO==="personal"?renderComp()+renderRep():""}
+  ${MODO==="personal"?renderRep():""}
   <p class="note">Cada sorteo es independiente: estos conteos describen el pasado, no garantizan el próximo resultado.</p>`;
 }
 let picks=null;
