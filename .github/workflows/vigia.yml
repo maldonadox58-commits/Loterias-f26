@@ -1,0 +1,36 @@
+name: Vigía en vivo
+# Corre sin parar: cada turno dura ~5.5 h revisando cada minuto; al terminar lanza el siguiente.
+# El cron cada hora es respaldo por si la cadena se corta (GitHub a veces no lanza los cron).
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/vigia.yml', 'robot.py']
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: vigia
+  cancel-in-progress: false
+jobs:
+  vigia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      ALARMAS: ${{ secrets.ALARMAS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Configurar git
+        run: |
+          git config user.name "robot-f26"
+          git config user.email "robot-f26@users.noreply.github.com"
+      - name: Vigilar
+        run: python robot.py --turno 330
+      - name: Lanzar el siguiente turno
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run vigia.yml --ref main

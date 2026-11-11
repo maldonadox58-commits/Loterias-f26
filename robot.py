@@ -407,6 +407,34 @@ def main():
                 print(cod, "error", e)
         print("portada:", leer_portada())
         return
+    if "--turno" in args:
+        # vigía continuo: corre N minutos revisando cada minuto los sorteos que ya debieron salir
+        limite = time.time() + 60 * int(args[args.index("--turno") + 1])
+        ultimo = ""
+        while time.time() < limite:
+            d = ahora()
+            pend = pendientes(db, d)
+            if pend:
+                subprocess.run(["git", "pull", "-q", "--rebase", "-X", "theirs"])
+                db = cargar()
+                pend = pendientes(db, d)
+            if pend:
+                clave = ",".join(pend)
+                if clave != ultimo:
+                    log("buscando: " + clave)
+                    ultimo = clave
+                try:
+                    nuevos = revisar(db, set(pend), d)
+                except Exception as e:
+                    print("error", e, flush=True)
+                    nuevos = []
+                if nuevos:
+                    ultimo = ""
+                    guardar(db)
+                    git_push("Resultados " + ", ".join(f"{c} {f}" for c, f, _ in nuevos))
+            time.sleep(60)
+        git_push("Registro del robot")
+        return
     if "--vigilar" in args:
         limite = time.time() + 60 * int(args[args.index("--vigilar") + 1])
         while True:
