@@ -37,6 +37,7 @@ jobs:
           KS_B64: ${{ secrets.KEYSTORE_B64 }}
           KS_PASS: ${{ secrets.KEYSTORE_PASS }}
           ALARMAS: ${{ secrets.ALARMAS }}
+          MAQUINA: ${{ secrets.MAQUINA }}
         run: |
           if [ -n "$KS_B64" ]; then export KS_PATH=$RUNNER_TEMP/f26.jks; else export KS_PATH=$PWD/firma/prueba.jks KS_PASS=f26prueba; fi
           W=app/src/main/assets/www
@@ -44,7 +45,8 @@ jobs:
           import os, sys, json
           p = sys.argv[1]; s = open(p, encoding="utf-8").read()
           rutas = json.loads(os.environ.get("ALARMAS") or "[]")
-          s = s.replace("<script>", "<script>window.F26_RUTAS=" + json.dumps(rutas) + ";", 1)
+          maq = os.environ.get("MAQUINA") or ""
+          s = s.replace("<script>", "<script>window.F26_RUTAS=" + json.dumps(rutas) + ";\n" + maq + "\n", 1)
           open(p, "w", encoding="utf-8").write(s)
           PY
           gradle assembleRelease -PAPP_ID=com.f26.personal -PAPP_NAME="F-26 Personal" -PVERSION_CODE=${{ github.run_number }}

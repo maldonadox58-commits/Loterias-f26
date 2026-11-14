@@ -162,6 +162,7 @@ textarea{font:500 .85rem ui-monospace,Menlo,monospace;padding:10px;border-radius
   <section class="panel" id="p-est" hidden></section>
   <section class="panel" id="p-gen" hidden></section>
   <section class="panel" id="p-ala" hidden></section>
+  <section class="panel" id="p-maq" hidden></section>
   <section class="panel" id="p-add" hidden>
     <div class="card">
       <p class="label">Anotar resultado</p>
@@ -528,9 +529,11 @@ function renderAdd(){
   const sl=document.getElementById("a-lot");sl.innerHTML=LOTS.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");sl.value=state.lot;
   const dt=document.getElementById("a-date");if(!dt.value)dt.value=today();
 }
-function render(){renderChips();({hoy:renderHoy,res:renderRes,est:renderEst,gen:renderGen,add:renderAdd,ala:renderAla})[state.tab]();revisarAlarmas()}
+// Complemento personal opcional (window.F26_MAQUINA lo entrega solo la versión personal al armarse)
+function renderMaq(){const el=document.getElementById("p-maq");if(window.F26_MAQUINA)window.F26_MAQUINA.render(el,{draws:()=>allDraws().filter(d=>!d.ex)})}
+function render(){renderChips();({hoy:renderHoy,res:renderRes,est:renderEst,gen:renderGen,add:renderAdd,ala:renderAla,maq:renderMaq})[state.tab]();revisarAlarmas()}
 function setTab(t){state.tab=t;document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
-  ["hoy","res","est","gen","add","ala"].forEach(k=>document.getElementById("p-"+k).hidden=k!==t);render()}
+  ["hoy","res","est","gen","add","ala","maq"].forEach(k=>document.getElementById("p-"+k).hidden=k!==t);render()}
 function msg(id,t,ok){const e=document.getElementById(id);e.textContent=t;e.className="msg "+(ok?"ok":"err")}
 function parseNum(v){v=String(v).trim();return /^\d{1,2}$/.test(v)?Number(v):null}
 
@@ -675,6 +678,7 @@ document.getElementById("f-add").addEventListener("submit",e=>{e.preventDefault(
   ["a-1","a-2","a-3"].forEach(id=>document.getElementById(id).value="");
   msg("a-msg",`Guardado: ${lotName(lot)} · ${fmtDate(date)} · ${n.map(p2).join(" - ")}`,true);
 });
+if(window.F26_MAQUINA){const b=document.createElement("button");b.className="tab";b.setAttribute("role","tab");b.dataset.tab="maq";b.setAttribute("aria-selected","false");b.textContent="Máquina";document.querySelector(".tabs").appendChild(b)}
 load();render();connectDb();
 setInterval(()=>{if(state.tab==="hoy"&&!document.hidden&&document.activeElement?.id!=="day-pick")renderHoy()},30000);
 document.addEventListener("change",e=>{if(e.target.id==="day-pick"&&e.target.value){state.day=e.target.value;renderHoy()}});
